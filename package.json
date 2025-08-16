@@ -1,5 +1,5 @@
 {
-  "name": "voice-to-slide-generator",
+  "name": "voicegeneratorai-app",
   "version": "1.0.0",
   "description": "Transform your 3-minute spoken presentation into a professional, AI-powered slide deck with speaker notes in seconds",
   "main": "server.js",
