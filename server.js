@@ -23,7 +23,8 @@ app.use(express.static('public'));
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = 'uploads/';
+    // Use /tmp for Vercel serverless functions
+    const uploadDir = process.env.VERCEL ? '/tmp/uploads/' : 'uploads/';
     fs.ensureDirSync(uploadDir);
     cb(null, uploadDir);
   },
@@ -66,6 +67,26 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Application is working', timestamp: new Date().toISOString() });
 });
 
+// Test OpenAI connection
+app.get('/api/test-openai', async (req, res) => {
+  try {
+    const hasKey = !!process.env.OPENAI_API_KEY;
+    const keyPrefix = process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 12) + '...' : 'Not Set';
+    
+    res.json({
+      status: 'OpenAI API Key Check',
+      hasApiKey: hasKey,
+      keyPrefix: keyPrefix,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to check OpenAI configuration',
+      details: error.message
+    });
+  }
+});
+
 // Upload and process audio
 app.post('/api/upload-audio', upload.single('audio'), async (req, res) => {
   try {
@@ -85,7 +106,10 @@ app.post('/api/upload-audio', upload.single('audio'), async (req, res) => {
 
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Failed to upload audio file' });
+    res.status(500).json({ 
+      error: 'Failed to upload audio file',
+      details: error.message
+    });
   }
 });
 
@@ -118,7 +142,17 @@ app.post('/api/transcribe', async (req, res) => {
 
   } catch (error) {
     console.error('Transcription error:', error);
-    res.status(500).json({ error: 'Failed to transcribe audio' });
+    console.error('Error details:', {
+      message: error.message,
+      status: error.status,
+      type: error.type,
+      code: error.code
+    });
+    res.status(500).json({ 
+      error: 'Failed to transcribe audio',
+      details: error.message,
+      apiKey: process.env.OPENAI_API_KEY ? 'Set' : 'Not Set'
+    });
   }
 });
 
